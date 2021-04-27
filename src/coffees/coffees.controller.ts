@@ -1,46 +1,69 @@
-import { CoffeesService } from './coffees.service';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
-  Query,
-  Res,
+  //   Query,
+  //   Res,
 } from '@nestjs/common';
+
+import { CoffeesService } from './coffees.service';
+import { CreateCoffeeDto } from './dto/create-coffee.dto';
+import { UpdateCoffeeDto } from './dto/update-coffee.dto';
 
 @Controller('coffees')
 export class CoffeesController {
   constructor(private readonly coffeesService: CoffeesService) {}
   @Get()
-  findAll(@Query() paginationQuery) {
-    const { limit, offset } = paginationQuery;
-    return `This action returns all the coffees. Limit: ${limit}, offset ${offset}.`;
+  findAll() {
+    const allCoffees = this.coffeesService.findAll();
+    if (!allCoffees) {
+      throw new NotFoundException(
+        `Uh-oh, something went wrong, coffees not found.`,
+      );
+    }
+    return allCoffees;
   }
+  //   findAll(@Query() paginationQuery) {
+
+  // const { limit, offset } = paginationQuery;
 
   @Get(':id')
   findOneById(@Param('id') id: number) {
-    return `This action returns #${id} coffee`;
+    console.log(typeof id);
+    const coffee = this.coffeesService.findOneById(id);
+    if (!coffee) {
+      throw new NotFoundException(
+        `Uh-oh, something went wrong, coffee #${id} not found.`,
+      );
+    }
+    return coffee;
   }
 
   @Post()
-  create(@Body() body) {
-    return body;
-    //return `This action creates a coffee`
+  create(@Body() createCoffeeDto: CreateCoffeeDto) {
+    console.log(createCoffeeDto instanceof CreateCoffeeDto);
+    return this.coffeesService.create(createCoffeeDto);
+    // if (!createdCoffee) {
+    //   throw new BadRequestException(
+    //     `Looks like you've missed some info, please try again...`,
+    //   );
+    // }
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() body) {
-    return `This action updates #${id} coffee`;
+  update(@Param('id') id: number, @Body() updateCoffeeDto: UpdateCoffeeDto) {
+    return this.coffeesService.update(id, updateCoffeeDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: number) {
-    return `This action removes #${id} coffee`;
+    return this.coffeesService.remove(id);
   }
 }
 

@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+    db:
+        image: postgres
+        restart: always
+        ports:
+            - "5432:5432"
+        environment:
+                POSTGRES_PASSWORD: pass1234
+
+# The most import thing here is that you have a db: service that is using the Docker "image" of Postgres
+# A Docker "image" is a multilayered file that will execute code with a docker container & in this case
+# it will be creating a PostgreSQL database
+# 5432:5432 indicates to Docker that internally within the container, it should have the database set up 
+# on port 5432 and also have it accessible *outside* of Docker on the same port as well, allowing you to 
+# access the db that's inside of the Docker container outside of the container & on your local machine
+# // Start containers in detached / background mode
+# docker-compose up -d
+
+# // Stop containers
+# docker-compose down
