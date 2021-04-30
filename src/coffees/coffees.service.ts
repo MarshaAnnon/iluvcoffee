@@ -1,43 +1,46 @@
-import { UpdateCoffeeDto } from './dto/update-coffee.dto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { Coffee } from './entities/coffee.entity';
 import { CreateCoffeeDto } from './dto/create-coffee.dto';
+import { UpdateCoffeeDto } from './dto/update-coffee.dto';
 
 @Injectable()
 export class CoffeesService {
-  private coffees: Coffee[] = [
-    {
-      id: 1,
-      name: "Frenchy's French Roast",
-      brand: "Frenchy's",
-      flavors: ['chocolate', 'coffee'],
-    },
-  ];
+  constructor(
+    @InjectRepository(Coffee)
+    private readonly coffeeRepository: Repository<Coffee>,
+  ) {}
 
-  findAll() {
-    return this.coffees;
+  async findAll() {
+    return this.coffeeRepository.find();
   }
 
-  findOneById(id: number) {
-    return this.coffees.find((coffee) => coffee.id === +id);
+  async findOneById(id: number) {
+    const coffee = await this.coffeeRepository.findOne(id);
+    return coffee;
   }
 
   create(createCoffeeDTO: CreateCoffeeDto) {
-    this.coffees.push(createCoffeeDTO);
-    return createCoffeeDTO;
+    const coffee = this.coffeeRepository.create(createCoffeeDTO);
+    return this.coffeeRepository.save(coffee);
   }
 
-  update(id: number, updateCoffeeDTO: UpdateCoffeeDto) {
-    this.findOneById(id);
-    return updateCoffeeDTO;
-  }
-
-  remove(id: number) {
-    const coffeeIndex = this.coffees.findIndex((coffee) => coffee.id === +id);
-    if (coffeeIndex >= 0) {
-      this.coffees.splice(coffeeIndex, 1);
+  async update(id: number, updateCoffeeDto: UpdateCoffeeDto) {
+    const coffee = await this.coffeeRepository.preload({
+      id,
+      ...updateCoffeeDto,
+    });
+    if (!coffee) {
+      throw new NotFoundException(`Coffee #${id} not found`);
     }
+    return this.coffeeRepository.save(coffee);
+  }
+
+  async remove(id: number) {
+    const coffee = await this.findOneById(id);
+    return this.coffeeRepository.remove(coffee);
   }
 }
 // The main idea of a provider is that it can inject dependencies.
@@ -45,3 +48,8 @@ export class CoffeesService {
 // findOne() GET method takes one argument which represents an extracted "id" path parameter that you know is
 // of Type "number". However, by default, every path parameter and query parameter, come over the network as a String.
 // If you put id: number ValidationPipe will *try* to automatically convert the String identifier to a Number
+// preload() (line31) this method creates a new entity based on the object passed into it. It first looks to
+// see if an Entity ALREADY exists in the db, & if so, retrieves it & everything related to it. If an entity exists
+// already, preload replaces all of the values with the new ones passed in here in the UpdateCoffeeDto. NOTE - the preload
+// method will return undefined if the "id" of the entity passed in was NOT found in the db. MAKE SURE YOU always test whether
+// the result is "undefined" & if so, throw a notFoundException
